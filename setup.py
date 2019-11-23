@@ -14,7 +14,7 @@ from torch.utils.cpp_extension import CUDAExtension
 requirements = ["torch", "torchvision"]
 
 def get_extensions():
-    this_dir = os.path.dirname(os.path.abspath(__file__))
+    this_dir = os.path.dirname(os.path.abspath('lib/setup.py'))
     extensions_dir = os.path.join(this_dir, "model", "csrc")
 
     main_file = glob.glob(os.path.join(extensions_dir, "*.cpp"))
