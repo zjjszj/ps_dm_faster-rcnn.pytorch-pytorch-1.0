@@ -13,7 +13,6 @@ from torch.utils.cpp_extension import CUDAExtension
 
 requirements = ["torch", "torchvision"]
 
-
 def get_extensions():
     this_dir = os.path.dirname(os.path.abspath(__file__))
     extensions_dir = os.path.join(this_dir, "model", "csrc")
@@ -62,13 +61,6 @@ setup(
     description="object detection in pytorch",
     packages=find_packages(exclude=("configs", "tests",)),
     # install_requires=requirements,
-    install_requires=[
-        "cffi",
-        "opencv-python",
-        "msgpack",
-        "easydict",
-        "pyyaml"],
     ext_modules=get_extensions(),
     cmdclass={"build_ext": torch.utils.cpp_extension.BuildExtension},
-
 )
