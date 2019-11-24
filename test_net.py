@@ -7,7 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-from .import _init_paths
+#from .import _init_paths
 import os
 import sys
 import numpy as np
@@ -326,3 +326,183 @@ if __name__ == '__main__':
 
   end = time.time()
   print("test time: %0.4fs" % (end - start))
+
+
+
+#新建一个预测类
+class Predictor:
+
+    def __call__(self, *args, **kwargs):
+
+        #输入参数
+        dataset='imagenet'
+        checkpoint=416
+        checkepoch=6
+        checksession=1
+
+        if torch.cuda.is_available():
+            print("WARNING: You have a CUDA device, so you should probably run with --cuda")
+
+        np.random.seed(1)
+        imdb_name = "imagenet_train"
+        imdbval_name = "imagenet_val"
+        set_cfgs = ['ANCHOR_SCALES', '[8, 16, 32]', 'ANCHOR_RATIOS', '[0.5,1,2]']
+        cfg_file = "cfgs/{}.yml".format('resnet101')
+
+        print('Using config:')
+        pprint.pprint(cfg)
+
+        cfg.TRAIN.USE_FLIPPED = False
+        imdb, roidb, ratio_list, ratio_index = combined_roidb(imdbval_name, False)
+        imdb.competition_mode(on=True)
+
+        print('{:d} roidb entries'.format(len(roidb)))
+
+        input_dir ="models" + "/" + "resnet101" + "/" + dataset
+        if not os.path.exists(input_dir):
+            raise Exception('There is no input directory for loading network from ' + input_dir)
+        load_name = os.path.join(input_dir,
+                                 'faster_rcnn_{}_{}_{}.pth'.format(checksession, checkepoch, checkpoint))
+
+        # initilize the network here.
+        fasterRCNN = resnet(imdb.classes, 101, pretrained=False, class_agnostic=False)
+        fasterRCNN.create_architecture()
+
+        print("load checkpoint %s" % (load_name))
+        checkpoint = torch.load(load_name)
+        fasterRCNN.load_state_dict(checkpoint['model'])
+        if 'pooling_mode' in checkpoint.keys():
+            cfg.POOLING_MODE = checkpoint['pooling_mode']
+
+        print('load model successfully!')
+        # initilize the tensor holder here.
+        im_data = torch.FloatTensor(1)
+        im_info = torch.FloatTensor(1)
+        num_boxes = torch.LongTensor(1)
+        gt_boxes = torch.FloatTensor(1)
+
+        # ship to cuda
+        im_data = im_data.cuda()
+        im_info = im_info.cuda()
+        num_boxes = num_boxes.cuda()
+        gt_boxes = gt_boxes.cuda()
+
+        # make variable
+        im_data = Variable(im_data)
+        im_info = Variable(im_info)
+        num_boxes = Variable(num_boxes)
+        gt_boxes = Variable(gt_boxes)
+
+        cfg.CUDA = True
+
+        fasterRCNN.cuda()
+
+        start = time.time()
+        max_per_image = 100
+
+
+        thresh = 0.0
+
+        save_name = 'faster_rcnn_10'
+        num_images = len(imdb.image_index)
+        all_boxes = [[[] for _ in xrange(num_images)]
+                     for _ in xrange(imdb.num_classes)]
+
+        output_dir = get_output_dir(imdb, save_name)
+        dataset = roibatchLoader(roidb, ratio_list, ratio_index, 1, \
+                                 imdb.num_classes, training=False, normalize=False)
+        dataloader = torch.utils.data.DataLoader(dataset, batch_size=1,
+                                                 shuffle=False, num_workers=0,
+                                                 pin_memory=True)
+
+        data_iter = iter(dataloader)
+
+        _t = {'im_detect': time.time(), 'misc': time.time()}
+        det_file = os.path.join(output_dir, 'detections.pkl')
+
+        fasterRCNN.eval()
+        empty_array = np.transpose(np.array([[], [], [], [], []]), (1, 0))
+        for i in range(num_images):
+
+            data = next(data_iter)
+            with torch.no_grad():
+                im_data.resize_(data[0].size()).copy_(data[0])
+                im_info.resize_(data[1].size()).copy_(data[1])
+                gt_boxes.resize_(data[2].size()).copy_(data[2])
+                num_boxes.resize_(data[3].size()).copy_(data[3])
+
+            det_tic = time.time()
+            rois, cls_prob, bbox_pred, \
+            rpn_loss_cls, rpn_loss_box, \
+            RCNN_loss_cls, RCNN_loss_bbox, \
+            rois_label = fasterRCNN(im_data, im_info, gt_boxes, num_boxes)
+
+            scores = cls_prob.data
+            boxes = rois.data[:, :, 1:5]
+
+            if cfg.TEST.BBOX_REG:
+                # Apply bounding-box regression deltas
+                box_deltas = bbox_pred.data
+                if cfg.TRAIN.BBOX_NORMALIZE_TARGETS_PRECOMPUTED:
+                    # Optionally normalize targets by a precomputed mean and stdev
+                    box_deltas = box_deltas.view(-1, 4) * torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_STDS).cuda() \
+                                 + torch.FloatTensor(cfg.TRAIN.BBOX_NORMALIZE_MEANS).cuda()
+                    box_deltas = box_deltas.view(1, -1, 4 * len(imdb.classes))
+
+                pred_boxes = bbox_transform_inv(boxes, box_deltas, 1)
+                pred_boxes = clip_boxes(pred_boxes, im_info.data, 1)
+            else:
+                # Simply repeat the boxes, once for each class
+                pred_boxes = np.tile(boxes, (1, scores.shape[1]))
+
+            pred_boxes /= data[1][0][2].item()
+
+            scores = scores.squeeze()
+            pred_boxes = pred_boxes.squeeze()
+            det_toc = time.time()
+            detect_time = det_toc - det_tic
+            misc_tic = time.time()
+
+            for j in xrange(1, imdb.num_classes):
+                inds = torch.nonzero(scores[:, j] > thresh).view(-1)
+                # if there is det
+                if inds.numel() > 0:
+                    cls_scores = scores[:, j][inds]
+                    _, order = torch.sort(cls_scores, 0, True)
+
+                    cls_boxes = pred_boxes[inds][:, j * 4:(j + 1) * 4]
+
+                    cls_dets = torch.cat((cls_boxes, cls_scores.unsqueeze(1)), 1)
+                    # cls_dets = torch.cat((cls_boxes, cls_scores), 1)
+                    cls_dets = cls_dets[order]
+                    keep = nms(cls_boxes[order, :], cls_scores[order], cfg.TEST.NMS)
+                    cls_dets = cls_dets[keep.view(-1).long()]
+
+                    all_boxes[j][i] = empty_array
+
+            # Limit to max_per_image detections *over all classes*
+            if max_per_image > 0:
+                image_scores = np.hstack([all_boxes[j][i][:, -1]
+                                          for j in xrange(1, imdb.num_classes)])
+                if len(image_scores) > max_per_image:
+                    image_thresh = np.sort(image_scores)[-max_per_image]
+                    for j in xrange(1, imdb.num_classes):
+                        keep = np.where(all_boxes[j][i][:, -1] >= image_thresh)[0]
+                        all_boxes[j][i] = all_boxes[j][i][keep, :]
+
+            misc_toc = time.time()
+            nms_time = misc_toc - misc_tic
+
+            sys.stdout.write('im_detect: {:d}/{:d} {:.3f}s {:.3f}s   \r' \
+                             .format(i + 1, num_images, detect_time, nms_time))
+            sys.stdout.flush()
+
+
+        with open(det_file, 'wb') as f:
+            pickle.dump(all_boxes, f, pickle.HIGHEST_PROTOCOL)
+
+        print('Evaluating detections')
+        imdb.evaluate_detections(all_boxes, output_dir)
+
+        end = time.time()
+        print("test time: %0.4fs" % (end - start))

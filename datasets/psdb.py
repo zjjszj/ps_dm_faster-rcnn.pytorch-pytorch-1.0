@@ -11,7 +11,7 @@ from sklearn.metrics import average_precision_score, precision_recall_curve
 #from datasets.imdb import imdb
 # from fast_rcnn.config import cfg
 #from utils import cython_bbox
-from datasets import imdb
+from datasets.imdb import imdb
 
 
 #utils/__init__.py
@@ -445,6 +445,7 @@ if __name__ == '__main__':
     #from datasets.psdb import psdb
     d = psdb('train',root_dir=r'F:\datasets\reid\CUHK-SYSU_V2\dataset')
     res = d.roidb
+
 
 
 
