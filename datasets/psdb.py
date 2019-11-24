@@ -11,7 +11,7 @@ from sklearn.metrics import average_precision_score, precision_recall_curve
 #from datasets.imdb import imdb
 # from fast_rcnn.config import cfg
 #from utils import cython_bbox
-from lib.datasets.imdb import imdb
+from datasets import imdb
 
 
 #utils/__init__.py
