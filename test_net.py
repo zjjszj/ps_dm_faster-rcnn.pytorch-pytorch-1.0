@@ -7,7 +7,7 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
-import _init_paths
+from .import _init_paths
 import os
 import sys
 import numpy as np
@@ -20,19 +20,19 @@ import cv2
 
 import torch
 from torch.autograd import Variable
-import torch.nn as nn
-import torch.optim as optim
+# import torch.nn as nn
+# import torch.optim as optim
 import pickle
-from roi_data_layer.roidb import combined_roidb
-from roi_data_layer.roibatchLoader import roibatchLoader
-from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
-from model.rpn.bbox_transform import clip_boxes
+from .roi_data_layer.roidb import combined_roidb
+from .roi_data_layer.roibatchLoader import roibatchLoader
+from .model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
+from .model.rpn.bbox_transform import clip_boxes
 # from model.nms.nms_wrapper import nms
-from model.roi_layers import nms
-from model.rpn.bbox_transform import bbox_transform_inv
-from model.utils.net_utils import save_net, load_net, vis_detections
-from model.faster_rcnn.vgg16 import vgg16
-from model.faster_rcnn.resnet import resnet
+from .model.roi_layers import nms
+from .model.rpn.bbox_transform import bbox_transform_inv
+from .model.utils.net_utils import save_net, load_net, vis_detections
+from .model.faster_rcnn.vgg16 import vgg16
+from .model.faster_rcnn.resnet import resnet
 
 try:
     xrange          # Python 2
