@@ -387,8 +387,8 @@ if __name__ == '__main__':
 
 #训练
 class Trainer:
-    def __call__(self, *args, **kwargs):
 
+    def train(self):
         #参数
         dataset='imagenet'
         net='vgg16'
