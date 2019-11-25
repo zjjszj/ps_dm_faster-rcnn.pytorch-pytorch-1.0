@@ -22,7 +22,8 @@ from torch.autograd import Variable
 #
 # import torchvision.transforms as transforms
 # import torchvision.datasets as dset
-from scipy.misc import imread
+#from scipy.misc import imread
+from matplotlib.pyplot import imread
 # from roi_data_layer.roidb import combined_roidb
 # from roi_data_layer.roibatchLoader import roibatchLoader
 from model.utils.config import cfg, cfg_from_file, cfg_from_list, get_output_dir
@@ -386,14 +387,14 @@ class Predictor:
         net='vgg16'
         checksession=1
         checkepoch =6
-        checkpoint =416
-        load_dir='path/to/model/directoy'
+        checkpoint =10021
+        load_dir='./mydetector/model'
         cfgs ='vgg16.vml'
         set_cfgs=None
-        dataset='pascal_voc'
+        dataset='imagenet'
         image_dir='images'
         webcam_num=-1
-        cfg_file='cfgs/vgg16.yml'
+        cfg_file='./medetector/cfgs/vgg16.yml'
         vis=False
 
 
@@ -408,6 +409,7 @@ class Predictor:
         # train set
         # -- Note: Use validation set and disable the flipped to enable faster loading.
 
+        #加载预训练模型
         input_dir = load_dir + "/" + net + "/" + dataset
         if not os.path.exists(input_dir):
             raise Exception('There is no input directory for loading network from ' + input_dir)
