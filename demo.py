@@ -394,7 +394,7 @@ class Predictor:
         dataset='imagenet'
         image_dir='images'
         webcam_num=-1
-        cfg_file='./medetector/cfgs/vgg16.yml'
+        cfg_file='./mydetector/cfgs/vgg16.yml'
         vis=False
 
 
