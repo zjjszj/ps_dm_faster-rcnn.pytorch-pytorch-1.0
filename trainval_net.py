@@ -415,7 +415,7 @@ class Trainer:
         session=1
 
 
-        cfg_file = "./medetector/cfgs/{}_ls.yml".format(net) if large_scale else "cfgs/{}.yml".format(net)
+        cfg_file = "./mydetector/cfgs/{}_ls.yml".format(net) if large_scale else "./mydetector/cfgs/{}.yml".format(net)
         if cfg_file is not None:
             cfg_from_file(cfg_file)
         if set_cfgs is not None:

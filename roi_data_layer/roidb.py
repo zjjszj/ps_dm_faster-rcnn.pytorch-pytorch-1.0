@@ -108,7 +108,7 @@ def combined_roidb(imdb_names, training=True):
   
   def get_roidb(imdb_name):
     #imdb = get_imdb(imdb_name)
-    imdb=psdb(imdb_name,root_dir='image_root_dir')
+    imdb=psdb(imdb_name)
     print('Loaded dataset `{:s}` for training'.format(imdb.name))
     imdb.set_proposal_method(cfg.TRAIN.PROPOSAL_METHOD)
     print('Set proposal method: {:s}'.format(cfg.TRAIN.PROPOSAL_METHOD))
