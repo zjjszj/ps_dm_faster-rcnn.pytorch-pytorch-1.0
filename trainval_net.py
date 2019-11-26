@@ -412,8 +412,8 @@ class Trainer:
         lr_decay_gamma=0.1
         disp_interval=100
         session=1
-
-
+        cfg.TRAIN.USE_FLIPPED = False
+        cfg.USE_GPU_NMS = True
         cfg_file = "./mydetector/cfgs/{}_ls.yml".format(net) if large_scale else "./mydetector/cfgs/{}.yml".format(net)
         if cfg_file is not None:
             cfg_from_file(cfg_file)
@@ -425,13 +425,10 @@ class Trainer:
         np.random.seed(cfg.RNG_SEED)
 
         # torch.backends.cudnn.benchmark = True
-        if torch.cuda.is_available() :
-            print("WARNING: You have a CUDA device, so you should probably run with --cuda")
 
         # train set
         # -- Note: Use validation set and disable the flipped to enable faster loading.
-        cfg.TRAIN.USE_FLIPPED = False
-        cfg.USE_GPU_NMS = True
+
         imdb, roidb, ratio_list, ratio_index = combined_roidb(imdb_name)
         train_size = len(roidb)
 
