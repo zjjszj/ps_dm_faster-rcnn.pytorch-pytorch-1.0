@@ -37,7 +37,7 @@ def _compute_iou(a, b):
 
 
 class psdb(imdb):
-    def __init__(self, image_set, root_dir='/kaggle/input/cuhk-sysu/CUHK-SYSU_nomacosx/dataset'):  #使用于kaggle
+    def __init__(self, image_set, root_dir='./drive/My Drive/dataset'):  #使用于kaggle
         super(psdb, self).__init__('psdb_' + image_set)
         self._image_set = image_set
         # self._root_dir = self._get_default_path() if root_dir is None \
@@ -48,7 +48,6 @@ class psdb(imdb):
         self._image_index = self._load_image_set_index()
         self._probes = self._load_probes()
         self._roidb_handler = self.gt_roidb
-        self.cache_path='/'
 
 
         assert osp.isdir(self._root_dir), \
